@@ -1,7 +1,7 @@
-data/
-mlruns/
-artifacts/*.pt
-artifacts/*.pth
+/data/
+/mlruns/
+/artifacts/*.pt
+/artifacts/*.pth
 __pycache__/
 *.pyc
 .venv/
