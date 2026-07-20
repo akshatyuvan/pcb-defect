@@ -1,0 +1,34 @@
+---
+description: Kafka consumer and FastAPI serving constraints on an 8GB machine
+globs:
+  - "src/streaming/**"
+  - "src/serving/**"
+  - "docker-compose.yml"
+  - "Dockerfile*"
+---
+
+# Serving and Streaming Rules
+
+## Hard memory constraint
+The whole Docker stack must fit in a 4GB Docker Desktop allocation on an 8GB
+MacBook Air. Budget: Kafka ~1GB, FastAPI + model ~1GB, each consumer ~150MB.
+
+## Consumers never load the model
+Kafka consumers MUST NOT import torch or load a checkpoint. They call the
+FastAPI service over HTTP. The model is loaded exactly once across the entire
+stack. Do not suggest in-process inference "to avoid the HTTP hop" - it would
+double the footprint and undo the decoupling.
+
+## Kafka
+- Official apache/kafka image, KRaft mode. No Zookeeper container ever.
+- KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
+- Topic created with 3 partitions.
+- Manual offset commit AFTER successful inference, never auto-commit. A crash
+  mid-inference would otherwise silently drop a board.
+- Undecodable images route to a dead-letter topic, they do not crash the
+  consumer.
+- Prefer natively multi-arch images (arm64 host).
+
+## FastAPI
+Load the model from the MLflow model registry by version, not from a
+hardcoded checkpoint path.

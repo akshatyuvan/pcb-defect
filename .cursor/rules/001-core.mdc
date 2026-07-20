@@ -1,0 +1,37 @@
+---
+description: Core project conventions for the PCB defect detection project
+alwaysApply: true
+---
+
+# PCB Defect Detection — Core Rules
+
+Stack: PyTorch, FastAPI, MLflow, Kafka (apache/kafka, KRaft), Docker, pytest.
+Never suggest TensorFlow, Keras, YOLO, Kubernetes, Redis, Postgres, Airflow,
+DVC, ONNX, or Prometheus. All are deliberately out of scope.
+
+## Task shape
+- Patch-level classification, NOT whole-image. 64x64 grayscale patches tiled
+  from 640x640 DeepPCB boards.
+- 7 classes: good, open, short, mousebite, spur, copper, pinhole.
+- Model input is (B, 1, 64, 64). Single channel. No colour augmentation.
+- Train/val/test splits are by source image, never by patch. Splitting after
+  tiling leaks correlated patches across splits.
+
+## Model
+- PCBNet: 4 conv blocks (32/64/128/256), Conv-BN-ReLU x2 then MaxPool.
+- Global Average Pooling head into one Linear layer. Never Flatten into a
+  large dense layer - GAP is required for Grad-CAM.
+
+## Metrics
+- Select models on macro F1. Never on accuracy.
+- Headline metric is binary defect recall (six defect classes collapsed).
+- Loss is class-weighted by inverse frequency.
+
+## Gitignore
+Patterns must be root-anchored (/data/, not data/). A bare data/ also
+matches src/data/ and would silently untrack build_patches.py.
+
+## Environment
+- Days 1-4 run on Colab (T4). Days 5-9 run locally on an 8GB M-series Mac.
+- Notebooks are thin drivers: they call scripts in src/. No model definitions
+  or training loops in notebook cells.
