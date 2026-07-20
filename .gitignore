@@ -1,0 +1,9 @@
+data/
+mlruns/
+artifacts/*.pt
+artifacts/*.pth
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.ipynb_checkpoints/
