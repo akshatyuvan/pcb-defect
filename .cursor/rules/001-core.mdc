@@ -35,3 +35,26 @@ matches src/data/ and would silently untrack build_patches.py.
 - Days 1-4 run on Colab (T4). Days 5-9 run locally on an 8GB M-series Mac.
 - Notebooks are thin drivers: they call scripts in src/. No model definitions
   or training loops in notebook cells.
+
+## Data layout — supersedes the PNG-per-patch layout
+
+data/patches/
+  train.npz, val.npz, test.npz   <- THE dataset. Array contract is documented in
+                                    the module docstring of src/data/build_patches.py
+  patch_stats.json               <- class counts, labelling rule, normalisation stats
+  sample/{split}/{class}/*.png   <- capped visual sample. EYEBALL MATERIAL ONLY.
+                                    Never read this path for training or eval.
+
+Deliberate deviation, do not "fix" it: the full ~150k patches are NOT written as
+individual PNGs. Small-file writes over a Google Drive FUSE mount are
+pathologically slow, and training loads from a single in-memory uint8 tensor
+anyway (Colab has 2 vCPU; decoding PNGs per epoch starves the T4).
+
+NEVER suggest ImageFolder, a disk-backed DataLoader, or num_workers>0 for this
+dataset.
+
+## Experiment tracking
+
+MLflow tracking URI is a SQLite database, never the default file:// store.
+The Model Registry does not exist on a file store, and Day 5 loads the model by
+registry version rather than a hardcoded path (locked decision).

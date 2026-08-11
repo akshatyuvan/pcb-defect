@@ -1,0 +1,25 @@
+# Core ML
+torch>=2.4
+torchvision>=0.19
+numpy>=1.26
+pillow>=10.3
+opencv-python-headless>=4.10
+
+# Metrics / figures
+scikit-learn>=1.5
+matplotlib>=3.9
+
+# Experiment tracking (sqlite backend => model registry works)
+mlflow>=2.16
+
+# Serving (Day 5)
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+
+# Streaming (Day 6+)
+kafka-python>=2.0.2
+
+# Testing (Day 9)
+pytest>=8.3
+requests>=2.32
