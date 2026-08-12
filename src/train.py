@@ -296,7 +296,7 @@ def main():
             mlflow.log_metrics({
                 "train_loss": tot / n, "val_macro_f1": float(macro_f1),
                 "val_accuracy": float(acc),
-                "val_binary_defect_recall@0.5": float(bin_rec),
+                "val_binary_defect_recall_at_0p5": float(bin_rec),
                 "lr": sched.get_last_lr()[0],
             }, step=ep)
             print(f"ep {ep:02d} loss {tot/n:.4f} val_macroF1 {macro_f1:.4f} "
