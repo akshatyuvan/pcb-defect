@@ -172,16 +172,31 @@ def setup_mlflow(db_uri: str, artifact_dir: Path, exp_name: str):
 
 
 def log_model_compat(model, registered_name: str):
-    """MLflow renamed log_model's 'artifact_path' argument to 'name' in 3.x.
+    """Log and register the model, tolerating MLflow API drift.
 
-    We do not control which version pip resolves on Colab, and a TypeError here
-    would land after fifteen minutes of training has already completed.
+    Two moving parts across MLflow versions:
+      1. log_model's 'artifact_path' argument was renamed to 'name' in 3.x.
+      2. Newer versions default to the 'pt2' traced-graph serialization format,
+         which virtually executes forward() and therefore REQUIRES input_example.
+
+    Passing input_example is the right fix rather than a workaround: it makes
+    MLflow infer and store the model signature, so the registry records that this
+    model takes (N, 1, 64, 64) float32 and returns 7 logits. Day 5's service then
+    loads a self-describing artifact instead of a bare pickle it has to guess at.
+
+    The model is moved to CPU first. Tracing runs forward() on the example, and a
+    CPU numpy example against a CUDA model is a device mismatch. Nothing after
+    this point needs the GPU.
     """
+    model = model.cpu().eval()
+    # Batch of 1 is safe here: eval() means BatchNorm uses running statistics
+    # rather than batch statistics, so a single-sample forward is well-defined.
+    example = np.zeros((1, 1, 64, 64), dtype=np.float32)
     try:
-        mlflow.pytorch.log_model(model, name="model",
+        mlflow.pytorch.log_model(model, name="model", input_example=example,
                                  registered_model_name=registered_name)
     except TypeError:
-        mlflow.pytorch.log_model(model, artifact_path="model",
+        mlflow.pytorch.log_model(model, artifact_path="model", input_example=example,
                                  registered_model_name=registered_name)
 
 
