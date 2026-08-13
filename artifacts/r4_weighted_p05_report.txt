@@ -1,0 +1,29 @@
+run: r4_weighted_p05
+labelling: assign=frac min_frac=0.25
+best epoch: 29  val macro F1: 0.7603
+
+TEST per-class:
+              precision    recall  f1-score   support
+
+        good     0.9747    0.9853    0.9800     42895
+        open     0.7800    0.6773    0.7250       942
+       short     0.6154    0.6599    0.6369       691
+   mousebite     0.7113    0.5333    0.6095       827
+        spur     0.7438    0.5349    0.6223       673
+      copper     0.7753    0.7220    0.7477       669
+     pinhole     0.6744    0.7256    0.6990       645
+
+    accuracy                         0.9529     47342
+   macro avg     0.7535    0.6912    0.7172     47342
+weighted avg     0.9508    0.9529    0.9513     47342
+
+test macro F1: 0.7172
+test accuracy (reported, not used for selection): 0.9529
+
+binary defect operating point: {
+  "target_recall": 0.97,
+  "achievable": true,
+  "threshold": 0.00041610002517700195,
+  "recall_at_threshold": 0.9700921969867327,
+  "precision_at_threshold": 0.11056435491311702
+}

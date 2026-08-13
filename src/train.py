@@ -270,7 +270,12 @@ def main():
 
     with mlflow.start_run(run_name=args.run_name) as run:
         mlflow.log_params({
-            "weighted": args.weighted, "weight_power": args.weight_power,
+            "weighted": args.weighted,
+            "weight_power": args.weight_power,
+            # The value actually applied. weight_power is ignored when weighted
+            # is False, so logging it alone makes the control run look like a
+            # weighted run in the comparison table.
+            "effective_weight_power": args.weight_power if args.weighted else 0.0,
             "augment": args.augment, "epochs": args.epochs, "bs": args.bs,
             "lr": args.lr, "wd": args.wd, "seed": args.seed,
             "params": count_params(model),

@@ -1,0 +1,29 @@
+run: r2_weighted
+labelling: assign=frac min_frac=0.25
+best epoch: 29  val macro F1: 0.6975
+
+TEST per-class:
+              precision    recall  f1-score   support
+
+        good     0.9802    0.9541    0.9670     42895
+        open     0.5831    0.7113    0.6408       942
+       short     0.4283    0.7004    0.5316       691
+   mousebite     0.5651    0.5671    0.5661       827
+        spur     0.5285    0.5780    0.5522       673
+      copper     0.6437    0.7833    0.7067       669
+     pinhole     0.5418    0.7845    0.6409       645
+
+    accuracy                         0.9287     47342
+   macro avg     0.6101    0.7255    0.6579     47342
+weighted avg     0.9399    0.9287    0.9331     47342
+
+test macro F1: 0.6579
+test accuracy (reported, not used for selection): 0.9287
+
+binary defect operating point: {
+  "target_recall": 0.97,
+  "achievable": true,
+  "threshold": 0.027902424335479736,
+  "recall_at_threshold": 0.9700921969867327,
+  "precision_at_threshold": 0.11070337960943313
+}
