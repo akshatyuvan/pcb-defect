@@ -1,0 +1,63 @@
+==============================================================================
+DAY 3: CLASSICAL BASELINE, OPENCV TEMPLATE DIFFERENCING
+==============================================================================
+val boards 150 / val patches 14097
+test boards 500 / test patches 47342
+align radius 4px, target recall 0.97
+
+HYPERPARAMETER SWEEP (selected on VAL average precision, test untouched)
+ kernel  min_area    val AP   ceiling   P@R=0.97
+      0         0    0.3621    0.9922     0.1809
+      0        10    0.3625    0.9838     0.1946
+      0        25    0.3696    0.9725     0.2292
+      3         0    0.6086    0.9521     0.1007
+      3        10    0.6187    0.9486     0.1007
+      3        25    0.6309    0.9387     0.1007
+      5         0    0.8516    0.8605     0.1007
+      5        10    0.8516    0.8605     0.1007
+      5        25    0.8201    0.8217     0.1007
+      7         0    0.6219    0.5800     0.1007
+      7        10    0.6219    0.5800     0.1007
+      7        25    0.6219    0.5800     0.1007
+
+SELECTED on val AP: kernel=5, min_area=0
+Selection criterion is val average precision, not precision at the
+recall target, because at extreme recall the metric is dominated by
+the tail and is very noisy. AP summarises the whole curve.
+
+TEST EVALUATION (500 boards, 47,342-patch set, identical to Day 2)
+  average precision      0.7244
+  detection ceiling      0.8161  (max reachable recall, score > 0)
+  prevalence             0.0939  (a random classifier's precision)
+  P @ R=0.97          0.0939 (threshold 0.000000, 4447 TP / 42895 FP)
+
+NUMBERS TO BEAT (Day 2, same patches, same rule)
+  PCBNet r4_weighted_p05_registered : P=0.1106 @ R=0.97
+  PCBNet r1_unweighted              : P=0.1775 @ R=0.97
+
+BASELINE RECALL BY DEFECT CLASS (at the chosen threshold)
+  open       n=   942  recall=1.0000  ceiling=0.7718
+  short      n=   691  recall=1.0000  ceiling=0.8669
+  mousebite  n=   827  recall=1.0000  ceiling=0.6929
+  spur       n=   673  recall=1.0000  ceiling=0.8574
+  copper     n=   669  recall=1.0000  ceiling=0.9567
+  pinhole    n=   645  recall=1.0000  ceiling=0.7953
+
+POLARITY ACCURACY (does the sign of the difference match the class physics?)
+  chance is ~0.50: DeepPCB has 3 extra-copper and 3 missing-copper classes
+  open       n=   942  polarity acc=0.9904
+  short      n=   691  polarity acc=0.8582
+  mousebite  n=   827  polarity acc=0.9831
+  spur       n=   673  polarity acc=0.8455
+  copper     n=   669  polarity acc=0.9522
+  pinhole    n=   645  polarity acc=0.9907
+  OVERALL    n=  4447  polarity acc=0.9409
+
+CNN OVERLAY + EQUIVALENCE CHECK
+  reproduced test accuracy 0.9529   (Day 2 recorded 0.9529)
+  reproduced P @ R=0.97     0.1106 (Day 2 recorded 0.1106), threshold 0.000416
+  If those two do not match Day 2, the preprocessing or the operating-
+  point rule differs and the whole comparison below is void.
+
+figures: artifacts/figures/day3_baseline_pr.png
+figures: artifacts/figures/day3_baseline_examples.png

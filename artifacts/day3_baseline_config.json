@@ -1,0 +1,11 @@
+{
+  "kernel": 5,
+  "min_area": 0,
+  "align_radius": 4,
+  "target_recall": 0.97,
+  "test_ap": 0.7244226008684416,
+  "test_ceiling": 0.8160557679334383,
+  "test_precision_at_target": 0.093933505132863,
+  "test_threshold": 0.0,
+  "polarity_accuracy": 0.9408590060715089
+}
