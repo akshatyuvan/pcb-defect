@@ -1,0 +1,22 @@
+# Keep the build context small: docker sends it all to the daemon before
+# the first RUN line, and data/ is ~300MB of boards the API never reads.
+.git
+.gitignore
+data/
+notebooks/
+mlruns/
+mlflow.db
+artifacts/figures/
+artifacts/checkpoints/
+artifacts/*.txt
+artifacts/*.json
+!artifacts/serving/
+tests/
+scripts/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.venv/
+requirements.day1.bak

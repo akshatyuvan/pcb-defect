@@ -1,0 +1,59 @@
+{
+  "registry_name": "pcb-defect-cnn",
+  "registry_version": "1",
+  "run_id": "5a3abec714724672a4f12845dfbd0114",
+  "source_checkpoint_md5": "7e0b78cd41d27efa331e6f9a63d56826",
+  "staged_model_sha256": "e53f7cf7dc14ffb80bd3f283d916f3bc094d63f8809d97dfcb32330e66ba1ca2",
+  "constructor_kwarg": "num_classes",
+  "classes": [
+    "good",
+    "open",
+    "short",
+    "mousebite",
+    "spur",
+    "copper",
+    "pinhole"
+  ],
+  "norm": {
+    "mean": 0.6471728086471558,
+    "std": 0.4759970009326935
+  },
+  "input_spec": {
+    "channels": 1,
+    "height": 64,
+    "width": 64,
+    "pipeline": "uint8 -> /255 -> -mean -> /std -> (N,1,64,64) float32",
+    "export_crosscheck_max_logit_diff": 0.0,
+    "decoder": "PIL Image.convert('L'); verified bit-identical to cv2 on DeepPCB"
+  },
+  "cam": {
+    "layer": "final",
+    "feature_map": [
+      4,
+      4
+    ],
+    "upsample": 16,
+    "equals_gradcam": true,
+    "verified_max_abs_diff": 0.0
+  },
+  "operating_point": {
+    "binary_score": "1 - P(good)",
+    "target_recall": 0.97,
+    "fail_threshold": 0.000416,
+    "precision_at_threshold": 0.1106,
+    "review_threshold": null,
+    "note": "patch-level operating point from Day 2. Board-level verdicts reuse it as a max-over-patches rule, which is deliberately conservative and NOT yet calibrated at board level - Day 7."
+  },
+  "metrics_day2": {
+    "val_macro_f1": 0.7603,
+    "test_macro_f1": 0.7172,
+    "test_accuracy": 0.9529,
+    "precision_at_recall_0.97": 0.1106,
+    "binary_threshold_at_recall_0.97": 0.000416,
+    "test_binary_ap": 0.823,
+    "baseline_binary_ap": 0.7244,
+    "baseline_detection_ceiling": 0.8161,
+    "defect_prevalence": 0.0939
+  },
+  "known_limits": "not converged (best epoch 29/30); single seed; mousebite weakest (F1 0.610); P@R=0.97 only 0.111 vs 0.094 prevalence"
+}

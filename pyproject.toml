@@ -1,0 +1,9 @@
+# Minimal project config. Exists mainly so pytest resolves `src.` imports the
+# same way from the repo root, from Cursor, and from GitHub Actions on Day 9 -
+# rather than depending on how pytest happened to be invoked. Without this,
+# `pytest tests/` puts tests/ on sys.path but not the repo root, and every
+# `from src.serving...` import fails.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"

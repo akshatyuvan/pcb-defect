@@ -1,0 +1,12 @@
+# Docker image ONLY. Kept minimal on purpose:
+#  - no mlflow: the registry is a host-side concern; the image consumes a
+#    staged, registry-resolved artifact bundle (see src/mlops/stage_model.py)
+#  - no opencv/matplotlib: Pillow decodes PNG/JPEG and numpy does the colormap
+#  - no torchvision: PCBNet is hand-written, nothing is pretrained
+# On linux/arm64 the PyPI torch wheel is already CPU-only, so no extra index.
+torch>=2.4,<3
+numpy>=1.26,<3
+pillow>=10.4
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.8

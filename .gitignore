@@ -7,3 +7,8 @@ __pycache__/
 .venv/
 .DS_Store
 .ipynb_checkpoints/
+
+# --- Day 5: local MLflow store and raw incoming checkpoints ---
+mlflow.db
+mlruns/
+artifacts/checkpoints/
