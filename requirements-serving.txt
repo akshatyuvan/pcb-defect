@@ -3,7 +3,16 @@
 #    staged, registry-resolved artifact bundle (see src/mlops/stage_model.py)
 #  - no opencv/matplotlib: Pillow decodes PNG/JPEG and numpy does the colormap
 #  - no torchvision: PCBNet is hand-written, nothing is pretrained
-# On linux/arm64 the PyPI torch wheel is already CPU-only, so no extra index.
+#
+# --index-url pins PyTorch's CPU-only wheel index. This is NOT optional on
+# arm64: torch 2.13's default PyPI aarch64 wheel is CUDA-enabled (built for
+# Jetson/Grace), so plain `pip install torch` drags in cublas, cudnn, nccl,
+# triton and the rest of the CUDA 13 toolchain - roughly 2.5GB of code that
+# physically cannot run, because Docker Desktop on Apple Silicon exposes no
+# NVIDIA device. The CPU index keeps the image near 1GB, which is what the
+# 4GB Docker allocation was budgeted against.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
 torch>=2.4,<3
 numpy>=1.26,<3
 pillow>=10.4
