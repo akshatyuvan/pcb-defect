@@ -12,7 +12,7 @@ import io
 
 import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from src.serving.config import BOARD_SIZE, GRID, PATCH_SIZE
 
@@ -25,7 +25,19 @@ def decode_gray(raw: bytes) -> np.ndarray:
     scripts/verify_decode_parity.py (25 boards, max diff 0) - do not change
     decoders without re-running it.
     """
-    img = Image.open(io.BytesIO(raw))
+    # Pillow raises UnidentifiedImageError (a subclass of OSError, NOT of
+    # ValueError) when the bytes are not a decodable image. app.py's handlers
+    # catch ValueError, so without this translation the exception escapes as a
+    # 500 -- which tells the caller "the server is broken" when in fact the
+    # caller sent bad data. The consumer keys its retry policy off exactly that
+    # 4xx/5xx distinction, so a wrong code here becomes an infinite retry loop
+    # on a message that can never succeed. Found by scripts/inject_poison.py
+    # --kind corrupt on Day 7.
+    try:
+        img = Image.open(io.BytesIO(raw))
+        img.load()          # Image.open is lazy; truncated files fail here
+    except (UnidentifiedImageError, OSError) as e:
+        raise ValueError(f"not a decodable image: {type(e).__name__}: {e}") from None
     if img.mode != "L":
         img = img.convert("L")
     return np.asarray(img, dtype=np.uint8)

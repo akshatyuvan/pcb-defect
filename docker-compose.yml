@@ -86,6 +86,36 @@ services:
     # Day 8's consumers than the original budget assumed.
     mem_limit: 512m
     restart: unless-stopped
+  
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    image: pcb-consumer:latest
+    # NO container_name -- `docker compose up --scale inference=3` needs
+    # generated names, and a fixed one makes scaling fail outright.
+    depends_on:
+      kafka:
+        condition: service_started
+      api:
+        condition: service_started
+    environment:
+      # kafka:9092 is the INTERNAL listener (confirmed from
+      # KAFKA_ADVERTISED_LISTENERS). Host-side tools use localhost:29092.
+      PCB_BOOTSTRAP: kafka:9092
+      PCB_API_URL: http://api:8000
+      PCB_CONSUMER_GROUP: pcb-inference
+      PCB_TOPIC_BOARDS: pcb.boards
+      PCB_TOPIC_RESULTS: pcb.results
+      PCB_TOPIC_ALERTS: pcb.alerts
+      PCB_TOPIC_DLQ: pcb.dlq
+      PCB_CALIBRATION: /app/artifacts/serving/board_calibration.json
+      PCB_MAX_5XX_ATTEMPTS: "5"
+    # consumer holds no model, only one JSON envelope at a time
+    mem_limit: 256m
+    # on-failure, not always: exit 1 (API unreachable) should restart, but a
+    # clean exit 0 (LIMIT reached) should stay stopped.
+    restart: on-failure
 
 volumes:
   kafka-data:

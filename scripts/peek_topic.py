@@ -40,14 +40,20 @@ try:
         d = json.loads(m.value())
         # Pop the blob before printing: a 23,000-char base64 string makes the
         # envelope unreadable, and the envelope is the thing being verified.
-        b64len = len(d["image"].pop("b64"))
+        # Board envelopes carry an image block; result, alert and DLQ records
+        # deliberately do not (locked decision 11 -- results are a few hundred
+        # bytes, not 44 KiB). Strip the blob when present, otherwise print as-is.
+        img = d.get("image")
+        b64len = len(img.pop("b64")) if isinstance(img, dict) and "b64" in img else None
         print("")
         print(f"partition={m.partition()} offset={m.offset()} "
               f"key={m.key().decode()} size={len(m.value()):,}B")
         hdrs = {k: v.decode() for k, v in (m.headers() or [])}
         print(f"  headers: {hdrs}")
         print(f"  envelope: {json.dumps(d, indent=4)}")
-        print(f"  b64 length: {b64len:,} chars  (~{b64len * 3 // 4 / 1024:.1f} KiB of image)")
+        if b64len is not None:
+            print(f"  b64 length: {b64len:,} chars  "
+                  f"(~{b64len * 3 // 4 / 1024:.1f} KiB of image)")
         seen += 1
 finally:
     c.close()

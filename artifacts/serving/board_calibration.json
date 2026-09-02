@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-02T13:57:00+00:00",
+  "statistic": "top3_mean",
+  "pass_threshold": 0.9859826564788818,
+  "fail_threshold": 0.9979580044746399,
+  "patch_threshold": 0.000416,
+  "targets": {
+    "defect_recall": 0.99,
+    "flag_precision": 0.99
+  },
+  "calibrated_on": {
+    "split": "val",
+    "n_defective": 150,
+    "n_clean_templates": 150,
+    "source": "artifacts/day7_board_scores_val.jsonl"
+  },
+  "measured": {
+    "auroc": 0.9988,
+    "specificity_at_recall_target": 0.98,
+    "routing_on_calibration_set": {
+      "defective": {
+        "pass": 1,
+        "review": 3,
+        "fail": 146
+      },
+      "clean": {
+        "pass": 147,
+        "review": 2,
+        "fail": 1
+      },
+      "review_rate": 0.0167,
+      "missed_defective": 1,
+      "false_alarm_clean": 1
+    }
+  },
+  "alternatives": [
+    {
+      "statistic": "top3_mean",
+      "auroc": 0.9988,
+      "specificity_at_recall_target": 0.98,
+      "pass_threshold": 0.9859826564788818,
+      "fail_threshold": 0.9979580044746399
+    },
+    {
+      "statistic": "top5_mean",
+      "auroc": 0.996,
+      "specificity_at_recall_target": 0.9667,
+      "pass_threshold": 0.7148541986942292,
+      "fail_threshold": 0.9886817932128906
+    },
+    {
+      "statistic": "mean_score",
+      "auroc": 0.99,
+      "specificity_at_recall_target": 0.96,
+      "pass_threshold": 0.05249786054562719,
+      "fail_threshold": 0.08136873990430103
+    },
+    {
+      "statistic": "max_defect_score",
+      "auroc": 0.9847,
+      "specificity_at_recall_target": 0.94,
+      "pass_threshold": 0.999681,
+      "fail_threshold": null
+    },
+    {
+      "statistic": "count_gt_0p5",
+      "auroc": 0.9892,
+      "specificity_at_recall_target": 0.8933,
+      "pass_threshold": 3.0,
+      "fail_threshold": 9.0
+    },
+    {
+      "statistic": "count_gt_0p2",
+      "auroc": 0.9665,
+      "specificity_at_recall_target": 0.8867,
+      "pass_threshold": 5.0,
+      "fail_threshold": 12.0
+    },
+    {
+      "statistic": "count_gt_0p4",
+      "auroc": 0.9886,
+      "specificity_at_recall_target": 0.8533,
+      "pass_threshold": 3.0,
+      "fail_threshold": 9.0
+    },
+    {
+      "statistic": "count_gt_0p05",
+      "auroc": 0.9156,
+      "specificity_at_recall_target": 0.4933,
+      "pass_threshold": 5.0,
+      "fail_threshold": 18.0
+    },
+    {
+      "statistic": "count_gt_0p0171",
+      "auroc": 0.5738,
+      "specificity_at_recall_target": 0.04,
+      "pass_threshold": 14.0,
+      "fail_threshold": 86.0
+    },
+    {
+      "statistic": "n_flagged",
+      "auroc": 0.5877,
+      "specificity_at_recall_target": 0.0267,
+      "pass_threshold": 57.0,
+      "fail_threshold": null
+    }
+  ],
+  "caveats": [
+    "Negatives are DeepPCB _temp.jpg templates, the dataset's reference captures. They are defect-free by construction but may be systematically cleaner than a real clean board off a QC line, so specificity here is an upper bound.",
+    "Calibrated on 150 val boards plus their templates. Confidence intervals at n=150 are wide; do not read the third decimal.",
+    "The confusion matrix under 'measured' is on the calibration set itself and is optimistic by construction.",
+    "0.000416 remains the PATCH-level threshold from Day 2 and is unchanged. This file adds a separate BOARD-level operating point."
+  ]
+}

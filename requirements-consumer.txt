@@ -1,0 +1,9 @@
+# Consumer image dependencies. Deliberately tiny.
+#
+# Locked decision 10 says consumers never load the model. That is not only an
+# architecture preference, it is the memory budget: three consumers each
+# holding a 227MiB service would not fit alongside Kafka in 4GB of Docker.
+# This file is the practical expression of that decision -- no torch, no numpy,
+# no mlflow, no opencv. The HTTP client is stdlib urllib and src/streaming/
+# schema.py is pure stdlib too, so confluent-kafka is the only dependency.
+confluent-kafka==2.15.0

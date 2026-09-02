@@ -1,0 +1,271 @@
+
+========================================================================
+artifacts/serving/ contents
+========================================================================
+classes.json                           83 bytes
+model.pt                        4,719,773 bytes
+model_card.json                     1,801 bytes
+norm.json                              61 bytes
+
+========================================================================
+model_card.json
+========================================================================
+{
+  "registry_name": "pcb-defect-cnn",
+  "registry_version": "1",
+  "run_id": "5a3abec714724672a4f12845dfbd0114",
+  "source_checkpoint_md5": "7e0b78cd41d27efa331e6f9a63d56826",
+  "staged_model_sha256": "e53f7cf7dc14ffb80bd3f283d916f3bc094d63f8809d97dfcb32330e66ba1ca2",
+  "constructor_kwarg": "num_classes",
+  "classes": [
+    "good",
+    "open",
+    "short",
+    "mousebite",
+    "spur",
+    "copper",
+    "pinhole"
+  ],
+  "norm": {
+    "mean": 0.6471728086471558,
+    "std": 0.4759970009326935
+  },
+  "input_spec": {
+    "channels": 1,
+    "height": 64,
+    "width": 64,
+    "pipeline": "uint8 -> /255 -> -mean -> /std -> (N,1,64,64) float32",
+    "export_crosscheck_max_logit_diff": 0.0,
+    "decoder": "PIL Image.convert('L'); verified bit-identical to cv2 on DeepPCB"
+  },
+  "cam": {
+    "layer": "final",
+    "feature_map": [
+      4,
+      4
+    ],
+    "upsample": 16,
+    "equals_gradcam": true,
+    "verified_max_abs_diff": 0.0
+  },
+  "operating_point": {
+    "binary_score": "1 - P(good)",
+    "target_recall": 0.97,
+    "fail_threshold": 0.000416,
+    "precision_at_threshold": 0.1106,
+    "review_threshold": null,
+    "note": "patch-level operating point from Day 2. Board-level verdicts reuse it as a max-over-patches rule, which is deliberately conservative and NOT yet calibrated at board level - Day 7."
+  },
+  "metrics_day2": {
+    "val_macro_f1": 0.7603,
+    "test_macro_f1": 0.7172,
+    "test_accuracy": 0.9529,
+    "precision_at_recall_0.97": 0.1106,
+    "binary_threshold_at_recall_0.97": 0.000416,
+    "test_binary_ap": 0.823,
+    "baseline_binary_ap": 0.7244,
+    "baseline_detection_ceiling": 0.8161,
+    "defect_prevalence": 0.0939
+  },
+  "known_limits": "not converged (best epoch 29/30); single seed; mousebite weakest (F1 0.610); P@R=0.97 only 0.111 vs 0.094 prevalence"
+}
+
+========================================================================
+src.serving.schemas -- public surface
+========================================================================
+BoardPrediction(*, board_id: str | None = None, trace_id: str | None = None, verdict: str, n_patches: int, n_flagged: int, max_defect_score: float, fail_threshold: float, review_threshold: float | None, class_counts: dict[str, int], flagged: list[dict[str, typing.Any]], grid_pred: list[list[int]], grid_defect_score: list[list[float]], classes: list[str], latency_ms: float) -> None
+    .board_id               str | None
+    .trace_id               str | None
+    .verdict                <class 'str'>
+    .n_patches              <class 'int'>
+    .n_flagged              <class 'int'>
+    .max_defect_score       <class 'float'>
+    .fail_threshold         <class 'float'>
+    .review_threshold       float | None
+    .class_counts           dict[str, int]
+    .flagged                list[dict[str, typing.Any]]
+    .grid_pred              list[list[int]]
+    .grid_defect_score      list[list[float]]
+    .classes                list[str]
+    .latency_ms             <class 'float'>
+ExplainRequest(*, image_b64: str, board_id: str | None = None, trace_id: str | None = None, class_index: int | None = None) -> None
+    .image_b64              <class 'str'>
+    .board_id               str | None
+    .trace_id               str | None
+    .class_index            int | None
+Health(*, status: str, model_source: str, registry_name: str | None = None, registry_version: str | None = None, device: str, classes: list[str], fail_threshold: float, review_threshold: float | None, uptime_s: float) -> None
+    .status                 <class 'str'>
+    .model_source           <class 'str'>
+    .registry_name          str | None
+    .registry_version       str | None
+    .device                 <class 'str'>
+    .classes                list[str]
+    .fail_threshold         <class 'float'>
+    .review_threshold       float | None
+    .uptime_s               <class 'float'>
+ImageRequest(*, image_b64: str, board_id: str | None = None, trace_id: str | None = None) -> None
+    .image_b64              <class 'str'>
+    .board_id               str | None
+    .trace_id               str | None
+PatchPrediction(*, pred_class: str, pred_index: int, confidences: dict[str, float], defect_score: float, verdict: str, latency_ms: float, board_id: str | None = None, trace_id: str | None = None) -> None
+    .pred_class             <class 'str'>
+    .pred_index             <class 'int'>
+    .confidences            dict[str, float]
+    .defect_score           <class 'float'>
+    .verdict                <class 'str'>
+    .latency_ms             <class 'float'>
+    .board_id               str | None
+    .trace_id               str | None
+
+========================================================================
+src.serving.inference -- public surface
+========================================================================
+CONST GRID                     = 10
+Inferencer(lm: 'LoadedModel')
+    .decide(self, max_score: 'float') -> 'str'
+    .defect_score(self, probs: 'torch.Tensor') -> 'torch.Tensor'
+    .explain_patch(self, raw: 'bytes', class_idx: 'int | None' = None) -> 'dict[str, Any]'
+    .predict_board(self, raw: 'bytes', board_id: 'str | None' = None) -> 'dict[str, Any]'
+    .predict_patches(self, arr_u8: 'np.ndarray') -> 'dict[str, Any]'
+
+========================================================================
+src.serving.inference -- decide() source (the current routing policy)
+========================================================================
+    def decide(self, max_score: float) -> str:
+        """Three-outcome routing, degrading gracefully to two.
+
+        review_threshold is null until Day 7 measures a second operating point
+        (Day 2 has the PR cliff between recall 0.86-0.88 but never recorded the
+        threshold value there). Inventing a number to fill the third bucket
+        would be a fabricated measurement, so the service returns two outcomes
+        and says so, rather than pretending to triage."""
+        if self.review_t is None:
+            return "fail" if max_score >= self.fail_t else "pass"
+        if max_score >= self.review_t:
+            return "fail"
+        if max_score >= self.fail_t:
+            return "uncertain"
+        return "pass"
+
+
+========================================================================
+src.streaming.schema -- public surface
+========================================================================
+BoardMessage(schema_version: 'int', board_id: 'str', group: 'str', captured_at: 'str', source: 'str', seq: 'int', image: 'ImagePayload') -> None
+    .from_json(raw: 'bytes') -> "'BoardMessage'"
+    .image_bytes(self) -> 'bytes'
+    .to_json(self) -> 'bytes'
+ImagePayload(encoding: 'str', colour: 'str', height: 'int', width: 'int', sha256: 'str', b64: 'str') -> None
+CONST SCHEMA_VERSION           = 1
+CONST TOPIC_ALERTS             = 'pcb.alerts'
+CONST TOPIC_BOARDS             = 'pcb.boards'
+CONST TOPIC_DLQ                = 'pcb.dlq'
+CONST TOPIC_RESULTS            = 'pcb.results'
+build_message(board_id: 'str', group: 'str', raw: 'bytes', encoding: 'str', seq: 'int', source: 'str' = 'qc-camera-sim-01', height: 'int' = 640, width: 'int' = 640) -> 'BoardMessage'
+
+========================================================================
+src.streaming.producer -- board discovery / CLI flags
+========================================================================
+
+--- discover_boards(boards_file) ---
+def discover_boards(boards_file):
+    paths = sorted(RAW.rglob("*_test.jpg"))
+    if not paths:
+        sys.exit(f"no *_test.jpg under {RAW} - run scripts/get_data.sh (Day 5 step 5.3)")
+    if boards_file:
+        wanted = set(json.loads(Path(boards_file).read_text()))
+        paths = [p for p in paths if p.stem.replace("_test", "") in wanted]
+        if not paths:
+            sys.exit(f"{boards_file} matched no boards on disk")
+    return paths
+
+
+--- main() ---
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--bootstrap", default="localhost:29092")
+    ap.add_argument("--topic", default=TOPIC_BOARDS)
+    ap.add_argument("--rate", type=float, default=2.0, help="boards/sec; 0 = unthrottled")
+    ap.add_argument("--limit", type=int, default=20)
+    ap.add_argument("--loop", action="store_true")
+    ap.add_argument("--shuffle", action="store_true")
+    ap.add_argument("--boards-file", default=None)
+    args = ap.parse_args()
+
+    paths = discover_boards(args.boards_file)
+    if args.shuffle:
+        random.seed(42)
+        random.shuffle(paths)
+    print(f"{len(paths)} boards available -> topic {args.topic} @ {args.bootstrap}")
+
+    p = make_producer(args.bootstrap)
+    stats = {"ok": 0, "err": 0, "bytes": 0}
+
+    def on_delivery(err, msg):
+        # Fired from poll(); this is where "the broker actually took it" is
+        # confirmed. produce() returning is NOT delivery - it only enqueues.
+        if err is not None:
+            stats["err"] += 1
+            print(f"  DELIVERY FAILED {err}", file=sys.stderr)
+        else:
+            stats["ok"] += 1
+            stats["bytes"] += len(msg.value())
+
+    interval = 1.0 / args.rate if args.rate > 0 else 0.0
+    t_start = time.perf_counter()
+    seq = 0
+    remaining = 0
+    try:
+        while True:
+            for path in paths:
+                if args.limit and seq >= args.limit:
+                    raise StopIteration
+                board_id = path.stem.replace("_test", "")
+                group = path.parent.parent.name
+                raw = path.read_bytes()
+                encoding = path.suffix.lstrip(".").replace("jpg", "jpeg")
+                msg = build_message(board_id, group, raw, encoding, seq)
+                p.produce(
+                    args.topic,
+                    key=board_id.encode(),
+                    value=msg.to_json(),
+                    headers=[
+                        ("schema_version", b"1"),
+                        ("content_type", b"application/json"),
+                        ("image_encoding", msg.image.encoding.encode()),
+                        ("board_id", board_id.encode()),
+                        ("trace_id", str(uuid.uuid4()).encode()),
+                    ],
+                    on_delivery=on_delivery,
+                )
+                # poll(0) services delivery callbacks without blocking. Skip it
+                # and the internal queue fills and produce() starts raising
+                # BufferError - the classic first confluent-kafka bug.
+                p.poll(0)
+                seq += 1
+                if seq % 10 == 0:
+                    print(f"  queued {seq} (delivered {stats['ok']}, failed {stats['err']})")
+                if interval:
+                    time.sleep(interval)
+            if not args.loop:
+                break
+    except (StopIteration, KeyboardInterrupt):
+        pass
+    finally:
+        remaining = p.flush(30)
+        dt = time.perf_counter() - t_start
+
+    print("")
+    print("--- producer summary ---")
+    print(f"  queued      : {seq}")
+    print(f"  delivered   : {stats['ok']}")
+    print(f"  failed      : {stats['err']}")
+    print(f"  undelivered : {remaining}")
+    print(f"  wall time   : {dt:.2f}s")
+    if stats["ok"]:
+        mean_kib = stats["bytes"] / stats["ok"] / 1024
+        print(f"  mean msg    : {mean_kib:.1f} KiB (pre-compression)")
+        print(f"  rate        : {stats['ok'] / dt:.2f} boards/s")
+    if stats["err"] or remaining:
+        sys.exit(1)
+

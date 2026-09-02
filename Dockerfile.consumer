@@ -1,0 +1,22 @@
+# Kafka consumers. Separate image from the API on purpose: the API image is
+# 1.02GB because it carries torch, and a consumer carrying torch would be a
+# consumer that could accidentally load a model.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+COPY requirements-consumer.txt ./
+RUN pip install --no-cache-dir -r requirements-consumer.txt
+
+COPY src/ /app/src/
+# The calibrated operating point ships WITH the consumer, so a container can
+# never start with a threshold that disagrees with the code that shipped it.
+COPY artifacts/serving/board_calibration.json /app/artifacts/serving/board_calibration.json
+
+RUN useradd --uid 10001 --create-home appuser && chown -R appuser /app
+USER 10001
+
+ENTRYPOINT ["python", "-m", "src.streaming.consumer_inference"]
