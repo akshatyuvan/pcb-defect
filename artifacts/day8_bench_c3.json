@@ -1,0 +1,56 @@
+{
+  "label": "c3",
+  "consumers_configured": 3,
+  "n_results": 200,
+  "wall_s": 171.228,
+  "throughput_boards_per_s": 1.168,
+  "throughput_KiB_per_s": 51.6,
+  "mean_message_KiB": 44.2,
+  "latency": [
+    {
+      "metric": "e2e_ms",
+      "n": 200,
+      "min": 4366.7,
+      "p50": 109005.16,
+      "p95": 168975.37,
+      "p99": 173885.03,
+      "max": 175453.93,
+      "mean": 101111.59
+    },
+    {
+      "metric": "queue_wait_ms",
+      "n": 200,
+      "min": 562.67,
+      "p50": 105971.61,
+      "p95": 167946.46,
+      "p99": 173263.14,
+      "max": 174531.51,
+      "mean": 98607.6
+    },
+    {
+      "metric": "api_ms",
+      "n": 200,
+      "min": 613.76,
+      "p50": 2546.74,
+      "p95": 4534.39,
+      "p99": 5634.91,
+      "max": 5729.88,
+      "mean": 2501.63
+    }
+  ],
+  "verdicts": {
+    "pass": 93,
+    "fail": 100,
+    "review": 7
+  },
+  "work_per_consumer": {
+    "768b90475609": 75,
+    "12d595e49b8f": 66,
+    "6556856bc32f": 59
+  },
+  "results_per_partition": {
+    "2": 75,
+    "0": 66,
+    "1": 59
+  }
+}

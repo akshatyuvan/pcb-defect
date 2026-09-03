@@ -116,6 +116,26 @@ services:
     # on-failure, not always: exit 1 (API unreachable) should restart, but a
     # clean exit 0 (LIMIT reached) should stay stopped.
     restart: on-failure
-
+  alerts:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    image: pcb-consumer:latest
+    # same image as `inference`, different entrypoint -- one build, two roles
+    entrypoint: ["python", "-m", "src.streaming.consumer_alerts"]
+    depends_on:
+      kafka:
+        condition: service_started
+    environment:
+      PCB_BOOTSTRAP: kafka:9092
+      PCB_TOPIC_ALERTS: pcb.alerts
+      PCB_ALERT_LOG: /app/artifacts/alerts/alerts.jsonl
+      PCB_ALERT_WINDOW: "50"
+      PCB_REVIEW_RATE_ALARM: "0.20"
+    volumes:
+      # the alert log must outlive the container: it is the operator's record
+      - ./artifacts/alerts:/app/artifacts/alerts
+    mem_limit: 192m
+    restart: on-failure
 volumes:
   kafka-data:

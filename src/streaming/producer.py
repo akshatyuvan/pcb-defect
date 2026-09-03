@@ -11,6 +11,17 @@ Key flags:
     --limit N    stop after N boards
     --loop       cycle the dataset forever (sustained-throughput runs)
     --boards-file path/to/test_board_ids.json  restrict to the test split
+    --include-templates   also stream the paired _temp.jpg files
+
+On --include-templates: every DeepPCB _test.jpg carries 3-12 defects, so a
+stream of them alone routes to `fail` 100% of the time. The paired _temp.jpg
+templates are defect-free by construction (they are what Day 3's classical
+baseline differenced against, and what Day 7 calibrated the board thresholds
+on), so mixing them in produces a stream with both verdicts. That matters for
+Day 8: a benchmark where every board takes the same branch measures one code
+path, and an alerting consumer watching a metric pinned at 100% is watching
+nothing. Template board ids keep their `_temp` suffix so the two streams stay
+distinguishable downstream and do not collide on the Kafka key.
 """
 from __future__ import annotations
 
@@ -30,7 +41,12 @@ REPO = Path(__file__).resolve().parents[2]
 RAW = REPO / "data" / "raw" / "PCBData"
 
 
-def discover_boards(boards_file):
+def discover_boards(boards_file, include_templates=False):
+    """Board image paths to stream, optionally including defect-free templates.
+
+    Returns _test.jpg paths first, then _temp.jpg paths if requested. The
+    caller shuffles, so ordering here only matters for reproducibility.
+    """
     paths = sorted(RAW.rglob("*_test.jpg"))
     if not paths:
         sys.exit(f"no *_test.jpg under {RAW} - run scripts/get_data.sh (Day 5 step 5.3)")
@@ -39,6 +55,18 @@ def discover_boards(boards_file):
         paths = [p for p in paths if p.stem.replace("_test", "") in wanted]
         if not paths:
             sys.exit(f"{boards_file} matched no boards on disk")
+
+    if include_templates:
+        # Only templates PAIRED with a board already in `paths`. Globbing
+        # *_temp.jpg independently would pull in the known orphan template
+        # (one _temp.jpg has no matching _test.jpg) and, when --boards-file is
+        # set, would ignore the split restriction entirely -- silently mixing
+        # training-split templates into a test-split benchmark.
+        temps = [p.with_name(p.stem.replace("_test", "_temp") + p.suffix)
+                 for p in paths]
+        temps = [t for t in temps if t.exists()]
+        paths = paths + temps
+
     return paths
 
 
@@ -73,9 +101,12 @@ def main():
     ap.add_argument("--loop", action="store_true")
     ap.add_argument("--shuffle", action="store_true")
     ap.add_argument("--boards-file", default=None)
+    ap.add_argument("--include-templates", action="store_true",
+                    help="also stream paired _temp.jpg (defect-free) boards, "
+                         "so the stream contains both pass and fail verdicts")
     args = ap.parse_args()
 
-    paths = discover_boards(args.boards_file)
+    paths = discover_boards(args.boards_file, args.include_templates)
     if args.shuffle:
         random.seed(42)
         random.shuffle(paths)
