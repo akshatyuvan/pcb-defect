@@ -15,6 +15,7 @@ from src.serving.model_loader import load_model
 
 
 def test_cam_equals_gradcam_on_gap_head():
+    torch.manual_seed(0)  # CI prints the CAM diff; an unseeded input makes that number wobble run to run
     lm = load_model()
     model = lm.model
     W = get_head_weight(model)

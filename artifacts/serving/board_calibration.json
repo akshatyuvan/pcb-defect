@@ -111,5 +111,13 @@
     "Calibrated on 150 val boards plus their templates. Confidence intervals at n=150 are wide; do not read the third decimal.",
     "The confusion matrix under 'measured' is on the calibration set itself and is optimistic by construction.",
     "0.000416 remains the PATCH-level threshold from Day 2 and is unchanged. This file adds a separate BOARD-level operating point."
-  ]
+  ],
+  "specificity_caveat_outcome": {
+    "predicted_false_alarm_rate": 0.02,
+    "measured_false_alarm_rate": 0.097,
+    "measured_on": "93 _temp.jpg templates from the 500-board test split",
+    "measured_when": "day8",
+    "detail": "9 of 93 test templates alerted (6 fail, 3 review). Every false alarm came from a capture group absent from trainval.txt: 90100 x6, 12000 x2, 12300 x1. Zero came from the 7 groups calibration saw. Scores ranged 0.987183-0.999941.",
+    "caveat_on_the_caveat": "9 alerts on 93 templates is a small sample; 9.7% has wide error bars. Thresholds were fitted at n=150 on 7 of 11 capture groups."
+  }
 }

@@ -23,7 +23,6 @@
     "height": 64,
     "width": 64,
     "pipeline": "uint8 -> /255 -> -mean -> /std -> (N,1,64,64) float32",
-    "export_crosscheck_max_logit_diff": 0.0,
     "decoder": "PIL Image.convert('L'); verified bit-identical to cv2 on DeepPCB"
   },
   "cam": {
@@ -41,8 +40,7 @@
     "target_recall": 0.97,
     "fail_threshold": 0.000416,
     "precision_at_threshold": 0.1106,
-    "review_threshold": null,
-    "note": "patch-level operating point from Day 2. Board-level verdicts reuse it as a max-over-patches rule, which is deliberately conservative and NOT yet calibrated at board level - Day 7."
+    "note": "PATCH-level operating point from Day 2: threshold 0.000416 at recall 0.97 on the binary defect task. It applies to single 64x64 patches ONLY. It is NOT the board routing rule - see board_operating_point. Reusing it as a max-over-patches board rule was the Day 5 mistake: it sits below the model's ~0.0171 characteristic output on ordinary copper, so it flagged 95 of 100 tiles on a real board (n_flagged AUROC 0.5877, near chance)."
   },
   "metrics_day2": {
     "val_macro_f1": 0.7603,
@@ -55,5 +53,13 @@
     "baseline_detection_ceiling": 0.8161,
     "defect_prevalence": 0.0939
   },
-  "known_limits": "not converged (best epoch 29/30); single seed; mousebite weakest (F1 0.610); P@R=0.97 only 0.111 vs 0.094 prevalence"
+  "known_limits": "not converged (best epoch 29/30); single seed; mousebite weakest (F1 0.610); P@R=0.97 only 0.111 vs 0.094 prevalence",
+  "board_operating_point": {
+    "source": "artifacts/serving/board_calibration.json",
+    "statistic": "top3_mean",
+    "pass_threshold": 0.9859826564788818,
+    "fail_threshold": 0.9979580044746399,
+    "note": "BOARD-level routing rule, calibrated on Day 7 against DeepPCB _temp.jpg templates - the only defect-free boards the dataset ships. top3_mean over the 100-patch defect-score grid, selected from nine candidate statistics on specificity at recall >= 0.99 (AUROC 0.9988). Three outcomes: pass / review / fail."
+  },
+  "export_crosscheck_max_logit_diff": 0.0
 }

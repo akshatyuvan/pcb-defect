@@ -51,7 +51,19 @@ def discover_boards(boards_file, include_templates=False):
     if not paths:
         sys.exit(f"no *_test.jpg under {RAW} - run scripts/get_data.sh (Day 5 step 5.3)")
     if boards_file:
-        wanted = set(json.loads(Path(boards_file).read_text()))
+        # Explicit type check. set(json.loads(...)) on a JSON OBJECT iterates
+        # over its KEYS, which is silently wrong: {"boards": [...]} yields
+        # {"boards"} and {"00041000": ...} yields a plausible-but-arbitrary
+        # board set. The first case happens to die below at "matched no boards
+        # on disk"; the second would not. Reject the shape here so the failure
+        # names the actual problem instead of pointing at the dataset.
+        loaded = json.loads(Path(boards_file).read_text())
+        if not isinstance(loaded, list):
+            sys.exit(
+                f"{boards_file} must be a bare JSON array of board ids, "
+                f"got {type(loaded).__name__}"
+            )
+        wanted = set(loaded)
         paths = [p for p in paths if p.stem.replace("_test", "") in wanted]
         if not paths:
             sys.exit(f"{boards_file} matched no boards on disk")
