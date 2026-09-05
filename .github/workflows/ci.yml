@@ -1,0 +1,89 @@
+name: ci
+
+# Every push to main and every PR into it. There is no deploy stage: the
+# deliverable is a compose stack that runs on one host, so CI's job is to prove
+# the code imports, the committed model bundle is loadable and self-consistent,
+# and the compose file resolves.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Pinned to the same version as the Mac and Colab. One version, not a
+          # matrix: this project ships no library surface that needs to support
+          # a range of Pythons, so a matrix would buy nothing and cost minutes.
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-ci.txt
+            requirements-serving.txt
+
+      - name: Install dependencies
+        # requirements-ci.txt -r-includes requirements-serving.txt, so this is
+        # the image's dependency set plus pytest. The CPU wheel index comes in
+        # with it; see the comments in that file.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+
+      - name: Assert torch came from the CPU wheel index
+        # Not decoration. If someone adds a bare `torch` line to a requirements
+        # file, or the -r inheritance of --index-url breaks on a future pip,
+        # this fails with a message naming the cause - instead of CI silently
+        # downloading ~2.5GB of unusable CUDA wheels and getting slower forever.
+        # Same finding that took the Docker image from 5GB to 1.02GB on Day 5.
+        run: |
+          python -c "
+          import torch
+          print('torch', torch.__version__)
+          assert '+cpu' in torch.__version__, (
+              'expected a +cpu local version, got ' + torch.__version__ +
+              '; torch resolved from PyPI rather than the CPU wheel index'
+          )
+          "
+
+      - name: Run tests
+        # `python -m pytest`, never bare `pytest`: on this project's Mac,
+        # `which pytest` once resolved to a Python 3.9 binary despite the right
+        # env being active. `python -m` guarantees the interpreter that just
+        # installed the dependencies. pyproject.toml supplies pythonpath=["."],
+        # so no PYTHONPATH export is needed.
+        #
+        # Tests that need data/raw/PCBData skip themselves - the dataset is
+        # gitignored, so it is absent here by design. Everything that guards the
+        # committed model bundle still runs.
+        run: python -m pytest -q
+
+  compose:
+    # Separate job: needs docker rather than python, and it is fast. It catches
+    # YAML that parses but does not RESOLVE - an unknown key, a bad mem_limit,
+    # a service pointing at a build context that is not in the repo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate the compose stack
+        run: docker compose config --quiet
+
+      - name: Assert the consumer image installs no torch
+        # Locked decision 10 - consumers call the API over HTTP and never load
+        # the model - is enforced structurally by giving the consumer its own
+        # requirements file. Checking it here means a well-meaning edit that
+        # adds torch to the consumer image fails in CI rather than at the next
+        # `docker stats`, where it would show up as memory nobody budgeted for.
+        run: |
+          if grep -iq "^torch" requirements-consumer.txt; then
+            echo "requirements-consumer.txt must not install torch (locked decision 10)"
+            exit 1
+          fi
+          echo "consumer requirements clean:"
+          cat requirements-consumer.txt

@@ -1,0 +1,25 @@
+# CI installs the SERVING image's exact dependency set, plus test-only tools.
+#
+# Why `-r` rather than restating pins: requirements-serving.txt is what the
+# Docker image actually ships. Duplicating its versions here would create a
+# fourth pin list that drifts silently - CI would go green against a dependency
+# set the image does not use, which is worse than not testing at all.
+#
+# The -r also inherits requirements-serving.txt's index directives:
+#   --index-url       https://download.pytorch.org/whl/cpu
+#   --extra-index-url https://pypi.org/simple
+# so torch resolves from PyTorch's CPU wheel index on the linux/amd64 runner
+# and everything else from PyPI. That matters for the same reason it mattered
+# on arm64: the default PyPI torch wheel pulls the CUDA toolchain, roughly
+# 2.5GB the runner cannot execute. The workflow asserts the '+cpu' local
+# version so this cannot regress unnoticed.
+-r requirements-serving.txt
+
+# Test-only. Not in the serving image, on purpose - a test runner in a
+# production image is dead weight and extra attack surface.
+pytest==9.1.1
+
+# tests/test_schema.py imports src.streaming.schema, which is pure stdlib, but
+# src/streaming/producer.py imports confluent_kafka at module scope and
+# tests/test_producer.py imports that module. No broker is contacted.
+confluent-kafka==2.15.0
