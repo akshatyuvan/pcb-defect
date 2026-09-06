@@ -2,6 +2,8 @@
 
 [![ci](https://github.com/akshatyuvan/pcb-defect/actions/workflows/ci.yml/badge.svg)](https://github.com/akshatyuvan/pcb-defect/actions/workflows/ci.yml)
 
+![End-to-end demo](artifacts/figures/demo.gif)
+
 A convolutional network trained from scratch to find copper-layer defects on bare PCBs,
 served behind FastAPI, and fed by a Kafka stream that simulates a QC camera line.
 
